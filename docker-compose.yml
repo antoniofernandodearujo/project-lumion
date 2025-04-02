@@ -13,5 +13,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: project_lumion_api
+    # Aqui você injeta a variável de ambiente para o Sequelize:
+    environment:
+      DATABASE_URL: postgres://lumi:lumi123@postgres:5432/lumi_db
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+    # Se quiser mapear o código local para dentro do container, use volumes:
+    # volumes:
+    #   - ./apps/api:/app
+
 volumes:
   postgres_data:

@@ -1,16 +1,18 @@
-// Define as rotas relacionadas às faturas e mapeia para os métodos do controlador
+import express from 'express';
+import InvoiceController, { uploadMiddleware } from '../controllers/invoice.controller';
 
-import { Router } from 'express';
-import InvoiceController from '../controllers/invoice.controller';
+const router = express.Router();
 
-const router = Router();
+// Error handling middleware
+const asyncHandler = (fn: Function) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-// Rota para upload e processamento de PDF de fatura
-router.post('/upload', (req, res, next) => {
-  InvoiceController.uploadInvoice(req, res).catch(next);
-});
+router.post('/upload', uploadMiddleware, asyncHandler(InvoiceController.uploadInvoice));
 
-// Rota para obter todas as faturas
-router.get('/', InvoiceController.getInvoices);
+router.get('/', asyncHandler(InvoiceController.getInvoices));
+
+router.get('/client/:clientNumber', asyncHandler(InvoiceController.getInvoiceByClientNumber));
+
 
 export default router;

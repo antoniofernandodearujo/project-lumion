@@ -1,22 +1,23 @@
-# Utiliza a imagem oficial do Node.js com Alpine para um ambiente leve
 FROM node:22-alpine
 
-# Define o diretório de trabalho
 WORKDIR /app
 
-# Copia os arquivos de package para instalar as dependências
+# Copia os arquivos de dependências
 COPY apps/api/package*.json ./
 
-# Instala as dependências
+# Instala as dependências (incluindo devDependencies)
 RUN npm install
+
+# Instala o typescript globalmente
+RUN npm install -g typescript
+# Instala o ts-node-dev globalmente
+RUN npm install -g ts-node-dev
 
 # Copia o restante do código da API
 COPY apps/api/ ./
 
-# Compila o TypeScript
+# Executa o build
 RUN npm run build
 
 EXPOSE 3001
-
-# Inicia a aplicação
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]

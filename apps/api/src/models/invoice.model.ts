@@ -3,7 +3,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../db';
 
-// Define os atributos que cada fatura possuirá.
 interface InvoiceAttributes {
   id: number;
   clientNumber: string;
@@ -15,6 +14,7 @@ interface InvoiceAttributes {
   energiaCompensadaKwh: number;
   energiaCompensadaValor: number;
   contribIlumPublica: number;
+  pdfFile?: string;
   // Variáveis calculadas
   consumoEnergiaEletrica?: number;
   valorTotalSemGD?: number;
@@ -22,7 +22,7 @@ interface InvoiceAttributes {
 }
 
 // Alguns campos são opcionais na criação, pois podem ser calculados posteriormente.
-interface InvoiceCreationAttributes extends Optional<InvoiceAttributes, 'id' | 'consumoEnergiaEletrica' | 'valorTotalSemGD' | 'economiaGD'> {}
+interface InvoiceCreationAttributes extends Optional<InvoiceAttributes, 'id' | 'consumoEnergiaEletrica' | 'valorTotalSemGD' | 'economiaGD' | 'pdfFile'> {}
 
 // Classe que representa a fatura
 class Invoice extends Model<InvoiceAttributes, InvoiceCreationAttributes> implements InvoiceAttributes {
@@ -36,6 +36,7 @@ class Invoice extends Model<InvoiceAttributes, InvoiceCreationAttributes> implem
   public energiaCompensadaKwh!: number;
   public energiaCompensadaValor!: number;
   public contribIlumPublica!: number;
+  public pdfFile!: string;
 
   // Campos calculados
   public consumoEnergiaEletrica!: number;
@@ -46,7 +47,6 @@ class Invoice extends Model<InvoiceAttributes, InvoiceCreationAttributes> implem
   public readonly updatedAt!: Date;
 }
 
-// Inicializa o modelo, definindo os campos e seus tipos.
 Invoice.init({
   id: {
     type: DataTypes.INTEGER,
@@ -88,6 +88,11 @@ Invoice.init({
   contribIlumPublica: {
     type: DataTypes.FLOAT,
     allowNull: false
+  },
+  pdfFile: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true,
+    comment: 'PDF file stored as base64 string'
   },
   // Campos calculados (opcionais na criação)
   consumoEnergiaEletrica: {

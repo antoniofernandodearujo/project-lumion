@@ -1,18 +1,19 @@
 "use client"
 
-import { 
-  FormControl, 
-  InputLabel, 
-  MenuItem, 
-  Select, 
+import { useState } from "react"
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Box,
+  Typography,
   type SelectChangeEvent,
   InputAdornment,
-  Box,
-  Typography 
+  Paper,
 } from "@mui/material"
-import FilterListIcon from '@mui/icons-material/FilterList'
-import PersonIcon from '@mui/icons-material/Person'
-import { useState } from "react"
+import PersonIcon from "@mui/icons-material/Person"
+import FilterListIcon from "@mui/icons-material/FilterList"
 
 interface Cliente {
   id: string
@@ -22,29 +23,42 @@ interface Cliente {
 interface ClienteFilterProps {
   clientes: Cliente[]
   value: string
-  onChange: (clientNumber: string, shouldRefreshAll?: boolean) => void
+  onChange: (clientNumber: string) => void
 }
 
-export default function ClienteFilter({ clientes, value, onChange }: ClienteFilterProps) {
+export default function ClientFilter({ clientes, value, onChange }: ClienteFilterProps) {
   const [loading, setLoading] = useState(false)
 
-  const handleChange = async (event: SelectChangeEvent) => {
+  const handleChange = (event: SelectChangeEvent) => {
     const clientNumber = event.target.value
     setLoading(true)
-    
+
     try {
-      // Removendo a chamada desnecessária ao serviço, já que o filtro é feito no componente pai
       onChange(clientNumber)
     } catch (error) {
-      console.error('Erro ao filtrar cliente:', error)
+      console.error("Erro ao filtrar cliente:", error)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <FilterListIcon color="primary" />
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        borderColor: "rgba(0, 230, 118, 0.2)",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+        <FilterListIcon color="primary" sx={{ mr: 1 }} />
+        <Typography variant="body2" fontWeight={500}>
+          Selecione o Nº do Cliente
+        </Typography>
+      </Box>
+
       <FormControl fullWidth size="small">
         <InputLabel id="cliente-label">Nº do Cliente</InputLabel>
         <Select
@@ -54,27 +68,36 @@ export default function ClienteFilter({ clientes, value, onChange }: ClienteFilt
           label="Nº do Cliente"
           onChange={handleChange}
           disabled={loading}
-          startAdornment={
+          startAdornment={!value ? (
             <InputAdornment position="start">
-              <PersonIcon sx={{ color: 'primary.main' }} />
+              <PersonIcon color="primary" fontSize="small" />
             </InputAdornment>
-          }
+          ) : null}
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "rgba(0, 230, 118, 0.3)",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "rgba(0, 230, 118, 0.5)",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "primary.main",
+            },
+          }}
         >
           <MenuItem value="">
             <em>Todos os Clientes</em>
           </MenuItem>
           {clientes.map((c) => (
             <MenuItem key={c.id} value={c.id}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PersonIcon fontSize="small" />
-                <Typography>
-                  {c.id}
-                </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <PersonIcon fontSize="small" color="primary" />
+                <Typography>{c.id}</Typography>
               </Box>
             </MenuItem>
           ))}
         </Select>
       </FormControl>
-    </Box>
+    </Paper>
   )
 }

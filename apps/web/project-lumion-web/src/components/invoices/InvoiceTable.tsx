@@ -15,8 +15,11 @@ import {
   useTheme,
   useMediaQuery,
   Box,
+  TablePagination,
+  Divider,
 } from "@mui/material"
 import DownloadIcon from "@mui/icons-material/Download"
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { Invoice } from "@/types/Invoice"
 
 // Mapeia string "JAN/2024" -> Date para ordenação
@@ -51,6 +54,14 @@ function getTotalConsumption(invoice: Invoice): number {
   )
 }
 
+const getDetailedConsumption = (invoice: Invoice) => {
+  return {
+    energiaEletrica: invoice.energiaEletricaKwh || 0,
+    energiaSCEE: invoice.energiaSCEEEKwh || 0,
+    energiaCompensada: invoice.energiaCompensadaKwh || 0,
+  }
+}
+
 interface InvoiceTableProps {
   invoices: Invoice[]
 }
@@ -60,6 +71,8 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   if (!invoices || invoices.length === 0) {
     return (
@@ -124,123 +137,240 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
 
   const getTotalInvoiceValue = (clientInvoices: Record<string, Invoice>): number => {
     return Object.values(clientInvoices).reduce((total, invoice) => {
-      return total + (invoice.valorTotalSemGD || 0);
+      const invoiceValue = 
+        (invoice.energiaEletricaValor || 0) +
+        (invoice.contribIlumPublica || 0) +
+        (invoice.energiaCompensadaValor || 0) +
+        (invoice.energiaSCEEValor || 0);
+      
+      return total + invoiceValue;
     }, 0);
   };
 
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0)
+  }
+
+  const clientEntries = Object.entries(invoicesByClient)
+  const paginatedClients = clientEntries.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  )
+
   return (
-    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: 2 }}>
-      <Table>
-        <TableHead sx={{ backgroundColor: theme.palette.primary.light }}>
-          <TableRow>
-            <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: 600 }}>
-              Nº do Cliente
-            </TableCell>
-            {/* Coluna para cada mês/ano */}
-            {allMonthYears.map((monthYear) => (
-              <TableCell
-                key={monthYear}
-                align="center"
-                sx={{ color: theme.palette.primary.contrastText, fontWeight: 600 }}
-              >
-                {monthYear}
+    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+      <TableContainer sx={{ mt: 2, borderRadius: 2 }}>
+        <Table>
+          <TableHead sx={{ backgroundColor: theme.palette.primary.light }}>
+            <TableRow>
+              <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: 600 }}>
+                Nº do Cliente
               </TableCell>
-            ))}
-            {/* Nova coluna: Total de faturas */}
-            <TableCell
-              align="center"
-              sx={{ color: theme.palette.primary.contrastText, fontWeight: 600 }}
-            >
-              Total Faturas
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {Object.entries(invoicesByClient).map(([clientNumber, invoicesByMonth]) => {
-            const totalInvoiceValue = getTotalInvoiceValue(invoicesByMonth);
-
-            return (
-              <TableRow key={clientNumber}>
-                {/* Primeira coluna: número do cliente */}
-                <TableCell sx={{ fontWeight: 600, backgroundColor: theme.palette.grey[50] }}>
-                  {clientNumber}
+              {/* Coluna para cada mês/ano */}
+              {allMonthYears.map((monthYear) => (
+                <TableCell
+                  key={monthYear}
+                  align="center"
+                  sx={{ color: theme.palette.primary.contrastText, fontWeight: 600 }}
+                >
+                  {monthYear}
                 </TableCell>
+              ))}
+              {/* Nova coluna: Total de faturas */}
+              <TableCell
+                align="center"
+                sx={{
+                  color: theme.palette.primary.contrastText,
+                  fontWeight: 600,
+                  backgroundColor: theme.palette.primary.main,
+                  width: '200px'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600} color="#fff">Valor Total</Typography>
+                </Box>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedClients.map(([clientNumber, invoicesByMonth]) => {
+              const totalInvoiceValue = getTotalInvoiceValue(invoicesByMonth);
 
-                {/* Colunas dinâmicas: para cada mês, mostra a fatura + botão de download */}
-                {allMonthYears.map((monthYear) => {
-                  const invoice = invoicesByMonth[monthYear]
-                  if (!invoice) {
-                    return <TableCell key={monthYear} align="center" sx={{ padding: "4px", minWidth: "80px" }}>-</TableCell>
-                  }
+              return (
+                <TableRow key={clientNumber}>
+                  {/* Primeira coluna: número do cliente */}
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : theme.palette.grey[50] 
+                  }}>
+                    {clientNumber}
+                  </TableCell>
 
-                  const consumption = getTotalConsumption(invoice)
-                  const totalPrice = invoice.valorTotalSemGD?.toLocaleString("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  })
-
-                  return (
-                    <TableCell key={monthYear} align="center" sx={{ padding: "4px", minWidth: "80px" }}>
-                      <Tooltip
-                        title={
-                          <Box>
-                            <Typography variant="body2">
-                              kWh: <strong>{consumption.toFixed(2)} kWh</strong>
-                            </Typography>
-                            <Typography variant="body2">
-                              Valor da Fatura: <strong>{totalPrice}</strong>
-                            </Typography>
-                          </Box>
-                        }
-                        arrow
-                      >
-                        <Box component="span" sx={{ fontWeight: 500 }}>
-                          Fatura
-                        </Box>
-                      </Tooltip>
-
-                      <Tooltip title={`Baixar fatura de ${monthYear}`} arrow>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleDownload(invoice)}
-                          disabled={!invoice.pdfFile || downloadingInvoiceId === invoice.id}
-                        >
-                          <DownloadIcon 
-                            fontSize="inherit" 
-                            color={invoice.pdfFile ? 'primary' : 'disabled'}
-                          />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  )
-                })}
-                
-                {/* Coluna para total de faturas */}
-                <TableCell align="center">
-                  <Tooltip
-                    title={
-                      <Box>
-                        <Typography variant="body2">
-                          Total kWh: <strong>{Object.values(invoicesByMonth).reduce((total, inv) => total + getTotalConsumption(inv), 0).toFixed(2)} kWh</strong>
-                        </Typography>
-                      </Box>
+                  {/* Colunas dinâmicas: para cada mês, mostra a fatura + botão de download */}
+                  {allMonthYears.map((monthYear) => {
+                    const invoice = invoicesByMonth[monthYear]
+                    if (!invoice) {
+                      return <TableCell key={monthYear} align="center" sx={{ padding: "4px", minWidth: "80px" }}>-</TableCell>
                     }
-                    arrow
+
+                    // const consumption = getTotalConsumption(invoice);
+
+                    const valueInvoice = 
+                      invoice.energiaEletricaValor 
+                      + invoice.contribIlumPublica 
+                      + invoice.energiaCompensadaValor 
+                      + invoice.energiaSCEEValor;
+
+                    const totalPrice = valueInvoice?.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+
+                    return (
+                      <TableCell key={monthYear} align="center" sx={{ padding: "4px", minWidth: "80px" }}>
+                        <Tooltip
+                          title={
+                            <Box>
+                              <Typography variant="body2">
+                                Energia Elétrica: <strong>{invoice.energiaEletricaKwh?.toFixed(2) || 0} kWh</strong>
+                              </Typography>
+                              <Typography variant="body2">
+                                Energia SCEE s/ ICMS: <strong>{invoice.energiaSCEEEKwh?.toFixed(2) || 0} kWh</strong>
+                              </Typography>
+                              <Typography variant="body2">
+                                Energia Compensada GD I: <strong>{invoice.energiaCompensadaKwh?.toFixed(2) || 0} kWh</strong>
+                              </Typography>
+                              <Divider sx={{ my: 1 }} />
+                              <Typography variant="body2">
+                                Valor da Fatura: <strong>{totalPrice}</strong>
+                              </Typography>
+                            </Box>
+                          }
+                          arrow
+                        >
+                          <Box component="span" sx={{ fontWeight: 500 }}>
+                            Boleto
+                          </Box>
+                        </Tooltip>
+
+                        <Tooltip title={`Baixar fatura de ${monthYear}`} arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDownload(invoice)}
+                            disabled={!invoice.pdfFile || downloadingInvoiceId === invoice.id}
+                            sx={{
+                              backgroundColor: theme.palette.mode === 'dark' 
+                                ? 'rgba(0, 230, 118, 0.1)' 
+                                : 'rgba(0, 230, 118, 0.05)',
+                              '&:hover': {
+                                backgroundColor: theme.palette.mode === 'dark'
+                                  ? 'rgba(0, 230, 118, 0.2)'
+                                  : 'rgba(0, 230, 118, 0.1)',
+                              },
+                              '&.Mui-disabled': {
+                                backgroundColor: theme.palette.mode === 'dark'
+                                  ? 'rgba(255, 255, 255, 0.05)'
+                                  : 'rgba(0, 0, 0, 0.05)',
+                              },
+                              ml: 1, // margin left for spacing from the text
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <DownloadIcon 
+                              fontSize="inherit" 
+                              sx={{ 
+                                color: invoice.pdfFile 
+                                  ? theme.palette.primary.main
+                                  : theme.palette.mode === 'dark' 
+                                    ? 'rgba(255, 255, 255, 0.3)' 
+                                    : 'rgba(0, 0, 0, 0.3)',
+                              }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    )
+                  })}
+
+                  {/* Coluna para total de faturas */}
+                  <TableCell 
+                    align="center"
+                    sx={{
+                      backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : theme.palette.grey[50],
+                      borderLeft: `1px solid ${theme.palette.divider}`,
+                      fontWeight: 600
+                    }}
                   >
-                    <Typography variant="body2">
-                      {totalInvoiceValue.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </Typography>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                    <Tooltip
+                      title={
+                        <Box>
+                          <Typography variant="body2">
+                            Total Energia Elétrica: <strong>
+                              {Object.values(invoicesByMonth)
+                                .reduce((total, inv) => total + (inv.energiaEletricaKwh || 0), 0)
+                                .toFixed(2)} kWh
+                            </strong>
+                          </Typography>
+                          <Typography variant="body2">
+                            Total Energia SCEE: <strong>
+                              {Object.values(invoicesByMonth)
+                                .reduce((total, inv) => total + (inv.energiaSCEEEKwh || 0), 0)
+                                .toFixed(2)} kWh
+                            </strong>
+                          </Typography>
+                          <Typography variant="body2">
+                            Total Energia Compensada: <strong>
+                              {Object.values(invoicesByMonth)
+                                .reduce((total, inv) => total + (inv.energiaCompensadaKwh || 0), 0)
+                                .toFixed(2)} kWh
+                            </strong>
+                          </Typography>
+                        </Box>
+                      }
+                      arrow
+                    >
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          color: theme.palette.primary.main,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 1
+                        }}
+                      >
+                        {totalInvoiceValue.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      
+      <TablePagination
+        rowsPerPageOptions={[10, 25, 50]}
+        component="div"
+        count={clientEntries.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelDisplayedRows={({ from, to, count }) => 
+          `${from}-${to} de ${count} clientes`
+        }
+        labelRowsPerPage="Clientes por página:"
+      />
+    </Paper>
   )
 }

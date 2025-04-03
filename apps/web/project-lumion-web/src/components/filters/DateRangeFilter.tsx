@@ -1,70 +1,99 @@
-// src/components/DateRangeFilter.tsx
 "use client"
 
-import { Box } from "@mui/material"
-import { DatePicker } from "@mui/x-date-pickers/DatePicker"
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
-import { Dayjs } from "dayjs"
-import dayjs from "dayjs"
-import "dayjs/locale/pt-br"
+import { useState } from "react"
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Box,
+  Typography,
+  type SelectChangeEvent,
+  InputAdornment,
+  Paper,
+} from "@mui/material"
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"
+import FilterListIcon from "@mui/icons-material/FilterList"
 
-interface DateRangeFilterProps {
-  startDate: Dayjs | null
-  endDate: Dayjs | null
-  onStartDateChange: (date: Dayjs | null) => void
-  onEndDateChange: (date: Dayjs | null) => void
-  monthYearOnly?: boolean
+interface MonthYearFilterProps {
+  months: string[]
+  value: string
+  onChange: (month: string) => void
 }
 
-export default function DateRangeFilter({
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange,
-  monthYearOnly = false,
-}: DateRangeFilterProps) {
+export default function MonthYearFilter({ months, value, onChange }: MonthYearFilterProps) {
+  const [loading, setLoading] = useState(false)
 
-  const handleStartDateChange = (newValue: string | number | Dayjs | Date | null | undefined) => {
-    if (!newValue) {
-      onStartDateChange(null)
-      return
-    }
-    const date = dayjs.isDayjs(newValue) ? newValue : dayjs(newValue)
-    onStartDateChange(date)
-  }
+  const handleChange = (event: SelectChangeEvent) => {
+    const month = event.target.value
+    setLoading(true)
 
-  const handleEndDateChange = (newValue: string | number | Dayjs | Date | null | undefined) => {
-    if (!newValue) {
-      onEndDateChange(null)
-      return
+    try {
+      onChange(month)
+    } catch (error) {
+      console.error("Erro ao filtrar mês:", error)
+    } finally {
+      setLoading(false)
     }
-    const date = dayjs.isDayjs(newValue) ? newValue : dayjs(newValue)
-    onEndDateChange(date)
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
-      <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={3}>
-        <Box flex="1">
-          <DatePicker
-            label={monthYearOnly ? "Mês/Ano Início" : "Data Início"}
-            value={startDate}
-            onChange={handleStartDateChange}
-            views={monthYearOnly ? ["year", "month"] : undefined}
-            slotProps={{ textField: { fullWidth: true } }}
-          />
-        </Box>
-        <Box flex="1">
-          <DatePicker
-            label={monthYearOnly ? "Mês/Ano Fim" : "Data Fim"}
-            value={endDate}
-            onChange={handleEndDateChange}
-            views={monthYearOnly ? ["year", "month"] : undefined}
-            slotProps={{ textField: { fullWidth: true } }}
-          />
-        </Box>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        borderRadius: 1,
+        bgcolor: "background.paper",
+        borderColor: "rgba(0, 230, 118, 0.2)",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+        <FilterListIcon color="primary" sx={{ mr: 1 }} />
+        <Typography variant="body2" fontWeight={500}>
+          Selecione o Mês/Ano
+        </Typography>
       </Box>
-    </LocalizationProvider>
+
+      <FormControl fullWidth size="small">
+        <InputLabel id="month-label">Mês/Ano</InputLabel>
+        <Select
+          labelId="month-label"
+          id="month-select"
+          value={value}
+          label="Mês/Ano"
+          onChange={handleChange}
+          disabled={loading}
+          startAdornment={!value ? (
+            <InputAdornment position="start">
+              <CalendarMonthIcon color="primary" fontSize="small" />
+            </InputAdornment>
+          ) : null}
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "rgba(0, 230, 118, 0.3)",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "rgba(0, 230, 118, 0.5)",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "primary.main",
+            },
+          }}
+        >
+          <MenuItem value="">
+            <em>Todos os Meses</em>
+          </MenuItem>
+          {months.map((month) => (
+            <MenuItem key={month} value={month}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CalendarMonthIcon fontSize="small" color="primary" />
+                <Typography>{month}</Typography>
+              </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </Paper>
   )
 }
+

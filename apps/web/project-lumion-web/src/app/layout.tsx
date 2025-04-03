@@ -1,12 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import { ThemeProvider } from "@/components/theme/ThemeProvider"
+import Layout from "@/components/layout/Layout"
 import "./globals.css"
-import Sidebar from "@/components/SideBar"
 
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Dashboard de Energia",
-  description: "Dashboard para visualização de consumo de energia e faturas",
+  title: "Lumi Energy - Gerenciamento de Faturas",
+  description: "Sistema de gerenciamento de faturas de energia",
 }
 
 export default function RootLayout({
@@ -16,11 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>
-        <div className="flex h-screen">
-          <Sidebar />
-          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-        </div>
+      <body className={inter.className}>
+        <ThemeProvider>
+          <Layout>{children}</Layout>
+        </ThemeProvider>
       </body>
     </html>
   )

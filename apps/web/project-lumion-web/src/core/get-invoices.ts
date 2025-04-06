@@ -3,9 +3,20 @@ import { Invoice } from '../types/Invoice';
 
 export class Invoices {
     private baseUrl: string;
+    private static instance: Invoices;
+    private onUpdateCallback?: () => void;
 
     constructor(baseUrl: string) {
         this.baseUrl = baseUrl;
+        Invoices.instance = this;
+    }
+
+    static getInstance(): Invoices | null {
+        return this.instance;
+    }
+
+    setOnUpdate(callback: () => void) {
+        this.onUpdateCallback = callback;
     }
 
     async getInvoices(): Promise<Invoice[]> {
@@ -28,20 +39,40 @@ export class Invoices {
         }
     }
 
-    async uploadInvoice(invoice: Invoice): Promise<Invoice> {
+    async uploadInvoice(pdfFile: File): Promise<Invoice> {
         try {
+            const formData = new FormData();
+            formData.append('file', pdfFile);
+
             const response = await axios.post<Invoice>(
-                `${this.baseUrl}/upload`, 
-                invoice,
+                `${this.baseUrl}upload`,
+                formData,
                 {
                     headers: {
-                        'Content-Type': 'application/pdf'
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    timeout: 30000,
+                    validateStatus: (status) => {
+                        return status >= 200 && status < 300;
                     }
                 }
             );
+
+            // Chama o callback de atualização se existir
+            if (this.onUpdateCallback) {
+                this.onUpdateCallback();
+            }
+
             return response.data;
         } catch (error) {
-            console.error('Error uploading invoice:', error);
+            if (axios.isAxiosError(error)) {
+                console.error('Error uploading invoice:', {
+                    status: error.response?.status,
+                    message: error.message,
+                    url: error.config?.url
+                });
+                throw new Error(`Failed to upload invoice: ${error.message}`);
+            }
             throw error;
         }
     }

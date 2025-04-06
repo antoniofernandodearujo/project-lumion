@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -13,14 +13,13 @@ import {
   IconButton,
   Typography,
   useTheme,
-  useMediaQuery,
   Box,
   TablePagination,
   Divider,
 } from "@mui/material"
 import DownloadIcon from "@mui/icons-material/Download"
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { Invoice } from "@/types/Invoice"
+import { Invoices } from "@/core/get-invoices"
 
 // Mapeia string "JAN/2024" -> Date para ordenação
 function parseMonthYear(monthYear: string): Date {
@@ -45,36 +44,38 @@ function parseMonthYear(monthYear: string): Date {
   return new Date(year, monthIndex)
 }
 
-// Retorna o consumo total (soma de diferentes tipos de energia)
-function getTotalConsumption(invoice: Invoice): number {
-  return (
-    (invoice.energiaEletricaKwh || 0) +
-    (invoice.energiaSCEEEKwh || 0) +
-    (invoice.energiaCompensadaKwh || 0)
-  )
-}
-
-const getDetailedConsumption = (invoice: Invoice) => {
-  return {
-    energiaEletrica: invoice.energiaEletricaKwh || 0,
-    energiaSCEE: invoice.energiaSCEEEKwh || 0,
-    energiaCompensada: invoice.energiaCompensadaKwh || 0,
-  }
-}
-
 interface InvoiceTableProps {
   invoices: Invoice[]
 }
 
 export default function InvoiceTable({ invoices }: InvoiceTableProps) {
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
-
-  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null);
+  const [localInvoices, setLocalInvoices] = useState<Invoice[]>(invoices)
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  if (!invoices || invoices.length === 0) {
+  useEffect(() => {
+    // Configura o callback de atualização
+    const invoiceService = Invoices.getInstance();
+    if (invoiceService) {
+        invoiceService.setOnUpdate(async () => {
+            try {
+                const updatedInvoices = await invoiceService.getInvoices();
+                setLocalInvoices(updatedInvoices);
+            } catch (error) {
+                console.error('Error refreshing invoices:', error);
+            }
+        });
+    }
+  }, []);
+
+  // Atualiza o estado local quando as props mudam
+  useEffect(() => {
+    setLocalInvoices(invoices)
+  }, [invoices])
+
+  if (!localInvoices || localInvoices.length === 0) {
     return (
       <Paper sx={{ p: 2, backgroundColor: theme.palette.grey[100] }}>
         <Typography>Nenhuma fatura encontrada</Typography>
@@ -82,21 +83,36 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
     )
   }
 
-  const allMonthYears = Array.from(new Set(invoices.map((inv) => inv.referenceMonth)))
+  // Função para organizar as faturas por cliente
+  const organizeInvoicesByClient = () => {
+    const invoicesByClient: Record<string, Record<string, Invoice>> = {}
+    
+    localInvoices.forEach((inv) => {
+      // Verifica se o cliente já existe
+      if (!invoicesByClient[inv.clientNumber]) {
+        invoicesByClient[inv.clientNumber] = {}
+      }
+      // Adiciona ou atualiza a fatura para o mês específico
+      invoicesByClient[inv.clientNumber][inv.referenceMonth] = inv
+    })
 
+    return invoicesByClient
+  }
+
+  const allMonthYears = Array.from(new Set(localInvoices.map((inv) => inv.referenceMonth)))
+  // Mantém a ordenação dos meses
   allMonthYears.sort((a, b) => {
     const dateA = parseMonthYear(a)
     const dateB = parseMonthYear(b)
     return dateA.getTime() - dateB.getTime()
   })
 
-  const invoicesByClient: Record<string, Record<string, Invoice>> = {}
-  invoices.forEach((inv) => {
-    if (!invoicesByClient[inv.clientNumber]) {
-      invoicesByClient[inv.clientNumber] = {}
-    }
-    invoicesByClient[inv.clientNumber][inv.referenceMonth] = inv
-  })
+  const invoicesByClient = organizeInvoicesByClient()
+  const clientEntries = Object.entries(invoicesByClient)
+  const paginatedClients = clientEntries.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  )
 
   const handleDownload = async (invoice: Invoice) => {
     if (!invoice.pdfFile) {
@@ -156,12 +172,6 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
     setPage(0)
   }
 
-  const clientEntries = Object.entries(invoicesByClient)
-  const paginatedClients = clientEntries.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
-
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden' }}>
       <TableContainer sx={{ mt: 2, borderRadius: 2 }}>
@@ -192,22 +202,27 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" fontWeight={600} color="#fff">Valor Total</Typography>
+                  <Typography variant="subtitle1" fontWeight={600} color="#fff">
+                    Valor Total &#40;Anual&#41;
+                  </Typography>
                 </Box>
               </TableCell>
-            </TableRow>
+              </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedClients.map(([clientNumber, invoicesByMonth]) => {
+            {paginatedClients.map(([clientNumber, invoicesByMonth], index) => {
               const totalInvoiceValue = getTotalInvoiceValue(invoicesByMonth);
 
               return (
-                <TableRow key={clientNumber}>
+                <TableRow key={`${clientNumber}-${index}`}>
                   {/* Primeira coluna: número do cliente */}
-                  <TableCell sx={{ 
-                    fontWeight: 600, 
-                    backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : theme.palette.grey[50] 
-                  }}>
+                  <TableCell 
+                    key={`client-${clientNumber}`}
+                    sx={{ 
+                      fontWeight: 600, 
+                      backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : theme.palette.grey[50] 
+                    }}
+                  >
                     {clientNumber}
                   </TableCell>
 
@@ -215,7 +230,7 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
                   {allMonthYears.map((monthYear) => {
                     const invoice = invoicesByMonth[monthYear]
                     if (!invoice) {
-                      return <TableCell key={monthYear} align="center" sx={{ padding: "4px", minWidth: "80px" }}>-</TableCell>
+                      return <TableCell key={`${clientNumber}-${monthYear}-empty`} align="center" sx={{ padding: "4px", minWidth: "80px" }}>-</TableCell>
                     }
 
                     // const consumption = getTotalConsumption(invoice);
@@ -232,7 +247,7 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
                     })
 
                     return (
-                      <TableCell key={monthYear} align="center" sx={{ padding: "4px", minWidth: "80px" }}>
+                      <TableCell key={`${clientNumber}-${monthYear}`} align="center" sx={{ padding: "4px", minWidth: "80px" }}>
                         <Tooltip
                           title={
                             <Box>
@@ -299,6 +314,7 @@ export default function InvoiceTable({ invoices }: InvoiceTableProps) {
 
                   {/* Coluna para total de faturas */}
                   <TableCell 
+                    key={`${clientNumber}-total`}
                     align="center"
                     sx={{
                       backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : theme.palette.grey[50],

@@ -14,16 +14,11 @@ import ClientFilter from "@/components/filters/ClientFilter"
 import InvoiceTable from "@/components/invoices/InvoiceTable"
 import MonthYearFilter from "@/components/filters/DateRangeFilter"
 import SearchFilter from "@/components/filters/Search"
-import AddInvoiceFab from "@/components/dashboard/AddInvoiceFab"
+import AddInvoiceFab from "@/components/AddInvoiceFab"
 
 import { Invoices } from "@/core/get-invoices"
 import type { Invoice } from "@/types/Invoice"
-
-export interface InvoiceUpload {
-  file: File;
-  name: string;
-  uploadDate: string;
-}
+import type { InvoiceUpload } from "@/types/Invoice"
 
 export default function BibliotecaFaturas() {
   const [allInvoices, setAllInvoices] = useState<Invoice[]>([])

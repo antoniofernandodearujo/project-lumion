@@ -16,3 +16,10 @@ export interface Invoice {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface InvoiceUpload {
+    file: File;
+    name: string;
+    uploadDate: string;
+}
+  

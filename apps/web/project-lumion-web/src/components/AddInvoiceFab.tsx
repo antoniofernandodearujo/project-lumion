@@ -4,12 +4,9 @@ import { useState } from "react"
 import { Fab, Tooltip, useMediaQuery, useTheme, Zoom } from "@mui/material"
 import AddIcon from "@mui/icons-material/Add"
 import AddInvoiceModal from "./AddInvoiceModal"
+import { toast } from 'react-hot-toast'
 
-export interface InvoiceUpload {
-  file: File;
-  name: string;
-  uploadDate: string;
-}
+import type { InvoiceUpload } from "@/types/Invoice"
 
 interface AddInvoiceFabProps {
   onSave: (pdfData: InvoiceUpload) => Promise<void>
@@ -19,6 +16,15 @@ export default function AddInvoiceFab({ onSave }: AddInvoiceFabProps) {
   const [open, setOpen] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+
+  const handleSave = async (pdfData: InvoiceUpload) => {
+    try {
+      await onSave(pdfData);
+    } catch (error) {
+      toast.error('Erro ao salvar fatura. Por favor, tente novamente.');
+      throw error; // Re-throw para ser tratado no modal
+    }
+  };
 
   const handleOpen = () => {
     setOpen(true)
@@ -50,7 +56,11 @@ export default function AddInvoiceFab({ onSave }: AddInvoiceFabProps) {
         </Fab>
       </Tooltip>
 
-      <AddInvoiceModal open={open} onClose={handleClose} onSave={onSave} />
+      <AddInvoiceModal 
+        open={open} 
+        onClose={handleClose} 
+        onSave={handleSave}
+      />
     </>
   )
 }

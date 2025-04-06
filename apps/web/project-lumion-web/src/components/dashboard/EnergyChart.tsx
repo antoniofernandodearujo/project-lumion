@@ -81,7 +81,7 @@ export default function EnergyChart() {
     }
 
     fetchData()
-  }, [])
+  }, [invoices])
 
   const options = {
     responsive: true,

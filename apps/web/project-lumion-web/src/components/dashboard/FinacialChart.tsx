@@ -59,7 +59,7 @@ export default function FinancialChart() {
     }
 
     fetchData()
-  }, [])
+  }, [invoices])
 
   const options = {
     responsive: true,

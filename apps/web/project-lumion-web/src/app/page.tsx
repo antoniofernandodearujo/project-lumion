@@ -13,21 +13,18 @@ import {
 } from "@mui/material"
 
 import AddIcon from "@mui/icons-material/Add"
-import AddInvoiceModal from "@/components/dashboard/AddInvoiceModal"
-import AddInvoiceFab from "@/components/dashboard/AddInvoiceFab"
+import AddInvoiceModal from "@/components/AddInvoiceModal"
+import AddInvoiceFab from "@/components/AddInvoiceFab"
 import SummaryCards from "@/components/dashboard/SumaryCard"
 import EnergyChart from "@/components/dashboard/EnergyChart"
 import FinancialChart from "@/components/dashboard/FinacialChart"
 
-export interface InvoiceUpload {
-  file: File;
-  name: string;
-  uploadDate: string;
-}
+import type { InvoiceUpload } from "@/types/Invoice"
 
 
 export default function Dashboard() {
   const [openModal, setOpenModal] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))

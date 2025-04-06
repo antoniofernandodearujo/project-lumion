@@ -79,7 +79,7 @@ export default function SummaryCards() {
     }
 
     fetchData()
-  }, [])
+  }, [invoices])
 
   if (isLoading) {
     return (

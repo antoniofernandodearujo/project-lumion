@@ -81,7 +81,8 @@ export default function EnergyChart() {
     }
 
     fetchData()
-  }, [invoices])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const options = {
     responsive: true,

@@ -79,7 +79,8 @@ export default function SummaryCards() {
     }
 
     fetchData()
-  }, [invoices])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (isLoading) {
     return (

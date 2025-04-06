@@ -59,7 +59,8 @@ export default function FinancialChart() {
     }
 
     fetchData()
-  }, [invoices])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const options = {
     responsive: true,

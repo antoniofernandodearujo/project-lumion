@@ -18,7 +18,7 @@ docker compose up -d
 Isso iniciará tanto a aplicação quanto o banco de dados PostgreSQL.
 
 #### Inicie a aplicação:
-A API ficará disponível em: http://localhost:3001
+A API ficará disponível em: http://localhost:3001/api/invoices/
 
 Acessando o Banco de Dados com psql
 Conecte-se ao PostgreSQL utilizando:
@@ -28,15 +28,11 @@ Conecte-se ao PostgreSQL utilizando:
   psql -U lumi -d lumi_db
 ```
 
-Endpoints da API (exemplos para testar com Postman)
-GET /faturas: Retorna todas as faturas.
-
-GET /faturas/:id: Retorna a fatura com o ID especificado.
-
-POST /faturas: Cria uma nova fatura.
-
-PUT /faturas/:id: Atualiza a fatura existente.
-
-DELETE /faturas/:id: Remove a fatura.
+### Endpoints da API (exemplos para testar com Postman)
+| Method | Endpoint               | Description                |
+|--------|------------------------|----------------------------|
+| GET    | `/`                    | Lista todos as faturas     |
+| POST   | `/upload`              | Envia o arquivo PDF para tratamento   |
+| GET    | `/client/:nº_cliente`  | Lista apenas os documentos de um cliente específico           |
 
 

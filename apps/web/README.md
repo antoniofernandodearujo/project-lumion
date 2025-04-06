@@ -1,5 +1,7 @@
 # Frontend do Projeto 🌐
 
+Acesse: https://lumi-project.netlify.app/
+
 ## Visão Geral
 O frontend foi desenvolvido utilizando **Next.js** com **TypeScript** e **MUI**.  
 A escolha destas tecnologias se deve a:

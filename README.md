@@ -27,6 +27,10 @@ Este projeto foi desenvolvido para o desafio de Desenvolvedor Full Stack da Lumi
     npm run dev
     ```
 4. Links Úteis
-- Frontend
-- Backend
+- https://lumi-project.netlify.app
 
+5. ### Observação ⚠️​⚠️​
+- A API estava hospedada no Railway, o mesmo parou de funcionar.
+- Rode o Backend 1º, seguindo esses passos:
+   1. https://github.com/antoniofernandodearujo/project-lumion/tree/main/apps/api
+   2. Agora é só acessar a aplicação FrontEnd, sem problemas

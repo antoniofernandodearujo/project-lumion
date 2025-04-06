@@ -33,4 +33,4 @@ Este projeto foi desenvolvido para o desafio de Desenvolvedor Full Stack da Lumi
 - A API estava hospedada no Railway, o mesmo parou de funcionar.
 - Rode o Backend 1º, seguindo esses passos:
    1. https://github.com/antoniofernandodearujo/project-lumion/tree/main/apps/api
-   2. Agora é só acessar a aplicação FrontEnd, sem problemas
+   2. Agora é só acessar a aplicação FrontEnd, sem problemas: https://lumi-project.netlify.app/
